@@ -77,7 +77,7 @@ class Weather extends Model
 
         if ($response->successful()) {
             // ステータスコードが200以上300未満の時。
-             // 天気予報情報を丸ごと取得して返却。加工は別メソッドで行う。
+            // 天気予報情報を丸ごと取得して返却。加工は別メソッドで行う。
             return $response['list'];
         } else {
             // 成功以外の場合はログを出した上でエラーコードとメッセージを返却

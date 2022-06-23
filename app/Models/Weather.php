@@ -17,7 +17,7 @@ class Weather extends Model
     const WEATHER_API   = 'http://api.openweathermap.org/data/2.5/forecast';
 
     /**
-     * 指定した都市の緯度と経度を取得します
+     * ジオコーディングAPIを用いて特定都市の緯度と経度を取得します
      *
      * @return array
      */
@@ -47,7 +47,7 @@ class Weather extends Model
     }
 
     /**
-     * fetch_weather_forecast_data
+     * ジオコーディングAPIで取得した緯度経度を基に天気予報を取得します
      *
      * @return array
      */

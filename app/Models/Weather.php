@@ -49,15 +49,15 @@ class Weather extends Model
     /**
      * fetch_weather_forecast_data
      *
-     * @return void
+     * @return array
      */
-    private function fetch_weather_forecast()
+    private function fetch_weather_forecast(): array
     {
         $geographic_data = $this->fetch_lat_and_lon();
         // ジオコーディングAPIで正しく地理情報を取得できなければログ出力して処理終了
         if (empty($geographic_data['lat']) || empty($geographic_data['lon'])) {
-            Log::error('[天気予報取得APIのエラー]地理情報を取得できなかったため天気予報の取得ができませんでした。', $geographic_data);
-            return;
+            Log::error('[天気予報取得APIのエラー]地理情報を取得できなかったため、以降の処理を中断しました', $geographic_data);
+            exit;
         }
 
         // 天気予報取得APIにリクエストし、レスポンスを受け取る
@@ -77,9 +77,8 @@ class Weather extends Model
 
         if ($response->successful()) {
             // ステータスコードが200以上300未満の時。
-            return [
-
-            ];
+             // 天気予報情報を丸ごと取得して返却。加工は別メソッドで行う。
+            return $response['list'];
         } else {
             // 成功以外の場合はログを出した上でエラーコードとメッセージを返却
             $this->make_error_log($response);
@@ -102,7 +101,6 @@ class Weather extends Model
             // 500レベルのステータスコード
             Log::error('[ジオコーディングAPIのエラー]サーバー側でエラーが発生しました', [$response->getStatusCode, $response->json]);
         }
-        return;
     }
 
     /**

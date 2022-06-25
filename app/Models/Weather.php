@@ -12,16 +12,19 @@ class Weather extends Model
 {
     use HasFactory;
 
-    // 使用するAPIのURL
+    // 定数の定義
     const GEOCODING_API = 'http://api.openweathermap.org/geo/1.0/direct';
     const WEATHER_API   = 'http://api.openweathermap.org/data/2.5/forecast';
+
+    // モデルに関連付けるテーブル
+    protected $table = 'weather';
 
     /**
      * ジオコーディングAPIを用いて特定都市の緯度と経度を取得します
      *
      * @return array
      */
-    private function fetch_lat_and_lon(): array
+    protected function fetch_lat_and_lon(): array
     {
         // ジオコーディングAPIにリクエストし、レスポンスを受け取る
         $response = Http::get(
@@ -51,7 +54,7 @@ class Weather extends Model
      *
      * @return array
      */
-    private function fetch_weather_forecast(): array
+    protected function fetch_weather_forecast(): array
     {
         $geographic_data = $this->fetch_lat_and_lon();
         // ジオコーディングAPIで正しく地理情報を取得できなければログ出力して処理終了
@@ -92,7 +95,7 @@ class Weather extends Model
      * @param  Response $response
      * @return void
      */
-    private function make_error_log(Response $response): void
+    protected function make_error_log(Response $response): void
     {
         if ($response->clientError()) {
             // 400レベルのステータスコード
@@ -109,7 +112,7 @@ class Weather extends Model
      * @param  Response $response
      * @return array
      */
-    private function return_response_error(Response $response): array
+    protected function return_response_error(Response $response): array
     {
         return [
             'code' => $response['cod'],

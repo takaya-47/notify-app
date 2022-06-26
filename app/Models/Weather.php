@@ -24,10 +24,10 @@ class Weather extends Model
      *
      * @return array
      */
-    protected function fetch_lat_and_lon(): array
+    public function fetch_lat_and_lon(): array
     {
         // ジオコーディングAPIにリクエストし、レスポンスを受け取る
-        $response = Http::get(
+        $response_json = Http::get(
             self::GEOCODING_API,
             [
                 'appid' => env('OPEN_WEATHER_MAP_API_KEY'),
@@ -36,16 +36,17 @@ class Weather extends Model
             ]
         );
 
-        if ($response->successful()) {
+        if ($response_json->successful()) {
+            $response = json_decode($response_json->body());
             // ステータスコードが200以上300未満の時。必要なデータのみに絞って返却。
             return [
-                'lat' => $response['lat'], // 緯度
-                'lon' => $response['lon'] // 経度
+                'lat' => $response[0]->lat, // 緯度
+                'lon' => $response[0]->lon // 経度
             ];
         } else {
             // 成功以外の場合はログを出した上でエラーコードとメッセージを返却
-            $this->make_error_log($response);
-            $this->return_response_error($response);
+            $this->make_error_log($response_json);
+            return $this->response_when_error($response_json);
         }
     }
 
@@ -54,7 +55,7 @@ class Weather extends Model
      *
      * @return array
      */
-    protected function fetch_weather_forecast(): array
+    public function fetch_weather_forecast(): array
     {
         $geographic_data = $this->fetch_lat_and_lon();
         // ジオコーディングAPIで正しく地理情報を取得できなければログ出力して処理終了
@@ -66,7 +67,7 @@ class Weather extends Model
         // 天気予報取得APIにリクエストし、レスポンスを受け取る
         // APIを叩いた日の00:00:00から翌日の24:00:00までの天気予報を取得
         // 例）6/21に叩く→6/21 00:00:00 ~ 6/23 00:00:00 (6/22 24:00:00)までを取得
-        $response = Http::get(
+        $response_json = Http::get(
             self::WEATHER_API,
             [
                 'appid' => env('OPEN_WEATHER_MAP_API_KEY'),
@@ -78,45 +79,47 @@ class Weather extends Model
             ]
         );
 
-        if ($response->successful()) {
+        if ($response_json->successful()) {
             // ステータスコードが200以上300未満の時。
+            $response = json_decode($response_json->body());
             // 天気予報情報を丸ごと取得して返却。加工は別メソッドで行う。
-            return $response['list'];
+            return $response->list;
         } else {
             // 成功以外の場合はログを出した上でエラーコードとメッセージを返却
-            $this->make_error_log($response);
-            $this->return_response_error($response);
+            $this->make_error_log($response_json);
+            return $this->response_when_error($response_json);
         }
     }
 
     /**
      * レスポンスエラー時のログ出力を行います
      *
-     * @param  Response $response
+     * @param  Response $response_json
      * @return void
      */
-    protected function make_error_log(Response $response): void
+    public function make_error_log(Response $response_json): void
     {
-        if ($response->clientError()) {
+        if ($response_json->clientError()) {
             // 400レベルのステータスコード
-            Log::error('[ジオコーディングAPIのエラー]クライアント側でエラーが発生しました', [$response->getStatusCode, $response->json]);
-        } elseif ($response->serverError()) {
+            Log::error('[ジオコーディングAPIのエラー]クライアント側でエラーが発生しました', [__METHOD__, 'Line:' . __LINE__, json_decode($response_json->body())]);
+        } elseif ($response_json->serverError()) {
             // 500レベルのステータスコード
-            Log::error('[ジオコーディングAPIのエラー]サーバー側でエラーが発生しました', [$response->getStatusCode, $response->json]);
+            Log::error('[ジオコーディングAPIのエラー]サーバー側でエラーが発生しました', [__METHOD__, 'Line:' . __LINE__, json_decode($response_json->body())]);
         }
     }
 
     /**
      * レスポンスエラー時のエラーコードとメッセージを配列にして返却します
      *
-     * @param  Response $response
+     * @param  Response $response_json
      * @return array
      */
-    protected function return_response_error(Response $response): array
+    public function response_when_error(Response $response_json): array
     {
+        $response = json_decode($response_json->body());
         return [
-            'code' => $response['cod'],
-            'message' => $response['message']
+            'error_code' => $response->cod,
+            'message' => $response->message
         ];
     }
 }

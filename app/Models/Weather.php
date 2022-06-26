@@ -65,8 +65,7 @@ class Weather extends Model
         }
 
         // 天気予報取得APIにリクエストし、レスポンスを受け取る
-        // APIを叩いた日の00:00:00から翌日の24:00:00までの天気予報を取得
-        // 例）6/21に叩く→6/21 00:00:00 ~ 6/23 00:00:00 (6/22 24:00:00)までを取得
+        // APIを叩いた日の06:00:00から24:00:00（翌日00:00:00）までの天気予報を取得
         $response_json = Http::get(
             self::WEATHER_API,
             [
@@ -75,7 +74,7 @@ class Weather extends Model
                 'lon' => $geographic_data['lon'],
                 'lang' => 'ja',
                 'units' => 'metric',
-                'cnt' => 17
+                'cnt' => 7
             ]
         );
 

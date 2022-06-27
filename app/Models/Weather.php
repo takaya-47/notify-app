@@ -39,16 +39,16 @@ class Weather extends Model
         );
 
         if ($response_json->successful()) {
-            $response = json_decode($response_json->body());
+            $response = json_decode($response_json->body(), true);
             // ステータスコードが200以上300未満の時。必要なデータのみに絞って返却。
             return [
-                'lat' => $response[0]->lat, // 緯度
-                'lon' => $response[0]->lon // 経度
+                'lat' => $response[0]['lat'], // 緯度
+                'lon' => $response[0]['lon'] // 経度
             ];
         } else {
             // 成功以外の場合はログを出した上でエラーコードとメッセージを返却
             $this->make_error_log($response_json);
-            return $this->response_when_api_error($response_json);
+            return $this->response_when_api_error(json_decode($response_json->body(), true));
         }
     }
 
@@ -60,11 +60,8 @@ class Weather extends Model
     public function fetch_weather_forecast(): array
     {
         $geographic_data = $this->fetch_lat_and_lon();
-        // ジオコーディングAPIで正しく地理情報を取得できなければログ出力して処理終了
-        if (empty($geographic_data['lat']) || empty($geographic_data['lon'])) {
-            Log::error('[天気予報取得APIのエラー]地理情報を取得できなかったため、以降の処理を中断しました', $geographic_data);
-            exit;
-        }
+        // レスポンスのエラー有無をチェックする。エラーがあればレスポンス返却。
+        $this->check_response_error($geographic_data);
 
         // 天気予報取得APIにリクエストし、レスポンスを受け取る
         // APIを叩いた日の06:00:00から24:00:00（翌日00:00:00）までの天気予報を取得
@@ -82,37 +79,36 @@ class Weather extends Model
 
         if ($response_json->successful()) {
             // ステータスコードが200以上300未満の時。
-            $response = json_decode($response_json->body());
+            $response = json_decode($response_json->body(), true);
             // 天気予報情報を丸ごと取得して返却。加工は別メソッドで行う。
-            return [$response->list, $response->city];
+            return $response;
         } else {
             // 成功以外の場合はログを出した上でエラーコードとメッセージを返却
             $this->make_error_log($response_json);
-            return $this->response_when_api_error($response_json);
+            return $this->response_when_api_error(json_decode($response_json->body(), true));
         }
     }
 
     /**
      * 天気予報取得APIのレスポンスデータをDBに登録します
      *
-     * @return int 登録したレコードのID
+     * @return void
      */
-    public function store_response_data_from_weather_api()
+    public function store_response_data_from_weather_api(): void
     {
-        list($weather_data_array, $city_data) = $this->fetch_weather_forecast();
-        // 取得データにエラーコードが含まれていたらログ出力して処理を中断する
-        if ( ! empty($weather_data_array['error_code'])) {
-            Log::error('取得データにエラーがあるためDB登録を中断しました', [__METHOD__, 'LINE:' . __LINE__, $weather_data_array]);
-            return;
-        }
+        $response = $this->fetch_weather_forecast();
+        // レスポンスのエラー有無をチェックする。エラーがあればレスポンス返却。
+        $this->check_response_error($response);
 
+        $weather_data_array = $response['list'];
+        $city_data          = $response['city']['name'];
         // DB登録処理
         foreach ($weather_data_array as $key => $weather_data) {
             try {
                 DB::transaction();
                 $weather = new Weather();
                 $weather->date = $weather_data->dt_txt; // 日時
-                $weather->municipalities = $city_data->name; // 市町村
+                $weather->municipalities = $city_data; // 市町村
                 $weather->weather = $weather_data->weather->description; // 天気
                 $weather->highest_temperature = $weather_data->main->temp_max; // 最高気温
                 $weather->lowest_temperature = $weather_data->main->temp_min; // 最低気温
@@ -127,6 +123,7 @@ class Weather extends Model
         }
     }
 
+
     /**
      * レスポンスエラー時のログ出力を行います
      *
@@ -137,25 +134,41 @@ class Weather extends Model
     {
         if ($response_json->clientError()) {
             // 400レベルのステータスコード
-            Log::error('[ジオコーディングAPIのエラー]クライアント側でエラーが発生しました', [__METHOD__, 'LINE:' . __LINE__, json_decode($response_json->body())]);
+            Log::error('[ジオコーディングAPIのエラー]クライアント側でエラーが発生しました', [__METHOD__, 'LINE:' . __LINE__, json_decode($response_json->body(), true)]);
         } elseif ($response_json->serverError()) {
             // 500レベルのステータスコード
-            Log::error('[ジオコーディングAPIのエラー]サーバー側でエラーが発生しました', [__METHOD__, 'LINE:' . __LINE__, json_decode($response_json->body())]);
+            Log::error('[ジオコーディングAPIのエラー]サーバー側でエラーが発生しました', [__METHOD__, 'LINE:' . __LINE__, json_decode($response_json->body(), true)]);
         }
     }
 
     /**
      * レスポンスエラー時のエラーコードとメッセージを配列にして返却します
      *
-     * @param  Response $response_json
+     * @param  array $response_data
      * @return array
      */
-    public function response_when_api_error(Response $response_json): array
+    public function response_when_api_error(array $response_data): array
     {
-        $response = json_decode($response_json->body());
         return [
-            'error_code' => $response->cod,
-            'message' => $response->message
+            'error_code' => $response_data['cod'],
+            'error_message' => $response_data['message']
         ];
     }
+
+    /**
+     * APIのレスポンスにエラーがあるか判定します
+     * エラーがあればレスポンスを返却します
+     *
+     * @param  mixed $response_data
+     * @return mixed
+     */
+    public function check_response_error(array $response_data)
+    {
+        if ( ! empty($response_data['error_code']) || ! empty($response_data['error_message'])) {
+            Log::error('取得データにエラーがあるため処理を中断しました', $response_data);
+            return $response_data;
+        }
+        return;
+    }
+
 }

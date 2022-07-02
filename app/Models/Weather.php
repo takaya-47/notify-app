@@ -21,6 +21,17 @@ class Weather extends Model
     // モデルに対応するテーブル名を設定（Laravelのデフォルトはクラスの複数形のスネークケース）
     protected $table = 'weather';
 
+    // 複数代入可能な項目を指定
+    protected $fillable = [
+        'date',
+        'municipalities',
+        'weather',
+        'highest_temperature',
+        'lowest_temperature',
+        'humidity',
+        'rainy_percent'
+    ];
+
     /**
      * ジオコーディングAPIを用いて特定都市の緯度と経度を取得します
      *
@@ -33,7 +44,7 @@ class Weather extends Model
             self::GEOCODING_API,
             [
                 'appid' => env('OPEN_WEATHER_MAP_API_KEY'),
-                'q' => 'Komoro',
+                'q'     => 'Komoro',
                 'limit' => 1
             ]
         );
@@ -69,14 +80,13 @@ class Weather extends Model
             self::WEATHER_API,
             [
                 'appid' => env('OPEN_WEATHER_MAP_API_KEY'),
-                'lat' => $geographic_data['lat'],
-                'lon' => $geographic_data['lon'],
-                'lang' => 'ja',
+                'lat'   => $geographic_data['lat'],
+                'lon'   => $geographic_data['lon'],
+                'lang'  => 'ja',
                 'units' => 'metric',
-                'cnt' => 7
+                'cnt'   => 7
             ]
         );
-
         if ($response_json->successful()) {
             // ステータスコードが200以上300未満の時。
             $response = json_decode($response_json->body(), true);
@@ -96,25 +106,27 @@ class Weather extends Model
      */
     public function store_response_data_from_weather_api(): void
     {
+        // 天気予報をAPIから取得
         $response = $this->fetch_weather_forecast();
         // レスポンスのエラー有無をチェックする。エラーがあればレスポンス返却。
         $this->check_response_error($response);
 
         $weather_data_array = $response['list'];
         $city_data          = $response['city']['name'];
+
         // DB登録処理
-        foreach ($weather_data_array as $key => $weather_data) {
+        foreach ($weather_data_array as $weather_data) {
             try {
-                DB::transaction();
-                $weather = new Weather();
-                $weather->date = $weather_data->dt_txt; // 日時
-                $weather->municipalities = $city_data; // 市町村
-                $weather->weather = $weather_data->weather->description; // 天気
-                $weather->highest_temperature = $weather_data->main->temp_max; // 最高気温
-                $weather->lowest_temperature = $weather_data->main->temp_min; // 最低気温
-                $weather->humidity = $weather_data->main->humidity; // 湿度
-                $weather->humidity = $weather_data->pop * 100; // 降水確率(単位：%とするため100を乗じている)
-                $weather->save();
+                DB::beginTransaction();
+                $weather = Weather::create([
+                    'date'                => $weather_data['dt_txt'],                    // 日時
+                    'municipalities'      => $city_data,                                 // 市区町村
+                    'weather'             => $weather_data['weather'][0]['description'], // 天気
+                    'highest_temperature' => $weather_data['main']['temp_max'],          // 最高気温
+                    'lowest_temperature'  => $weather_data['main']['temp_min'],          // 最低気温
+                    'humidity'            => $weather_data['main']['humidity'],          // 湿度
+                    'rainy_percent'       => $weather_data['pop'] * 100                  // 降水確率
+                ]);
                 DB::commit();
             } catch (Exception $e) {
                 DB::rollBack();
@@ -150,7 +162,7 @@ class Weather extends Model
     public function response_when_api_error(array $response_data): array
     {
         return [
-            'error_code' => $response_data['cod'],
+            'error_code'    => $response_data['cod'],
             'error_message' => $response_data['message']
         ];
     }

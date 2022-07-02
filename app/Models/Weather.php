@@ -118,7 +118,7 @@ class Weather extends Model
         foreach ($weather_data_array as $weather_data) {
             try {
                 DB::beginTransaction();
-                $weather = Weather::create([
+                Weather::create([
                     'date'                => $weather_data['dt_txt'],                    // 日時
                     'municipalities'      => $city_data,                                 // 市区町村
                     'weather'             => $weather_data['weather'][0]['description'], // 天気

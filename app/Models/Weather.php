@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Log;
 use \Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * 天気予報モデル
+ */
 class Weather extends Model
 {
     use HasFactory;
@@ -182,5 +185,4 @@ class Weather extends Model
         }
         return;
     }
-
 }

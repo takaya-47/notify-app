@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Weather;
 
+/**
+ * 天気予報モデルに対応するコントローラー
+ */
 class WeatherController extends Controller
 {
     /**

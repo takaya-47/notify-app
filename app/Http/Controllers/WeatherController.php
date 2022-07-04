@@ -6,12 +6,12 @@ use Illuminate\Http\Request;
 use App\Models\Weather;
 
 /**
- * 天気予報モデルに対応するコントローラー
+ * 天気予報APIへのリクエスト、レスポンスを処理するコントローラー
  */
-class WeatherController extends Controller
+class WeatherController extends NoticeController
 {
     /**
-     * 天気予報を取得します
+     * 天気予報を取得し、DB登録します
      *
      * @return void
      */

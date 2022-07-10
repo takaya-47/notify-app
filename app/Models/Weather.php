@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 
 /**
  * 天気予報モデル
@@ -56,5 +57,17 @@ class Weather extends Model
                 Log::error('DB登録中に予期せぬエラーが発生しました', [__METHOD__, 'LINE:' . __LINE__ . $e]);
             }
         }
+    }
+
+    /**
+     * 日付からレコードを検索して取得します
+     * @param  string $date
+     * @return Collection
+     */
+    public function fetch_by_date(string $date): Collection
+    {
+        return DB::table($this->table)
+                    ->where('date', 'like', "{$date}%")
+                    ->get();
     }
 }

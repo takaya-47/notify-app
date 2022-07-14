@@ -54,7 +54,8 @@ class Weather extends Model
                 DB::commit();
             } catch (Exception $e) {
                 DB::rollBack();
-                Log::error('DB登録中に予期せぬエラーが発生しました', [__METHOD__, 'LINE:' . __LINE__ . $e]);
+                Log::error('DB登録中に予期せぬエラーが発生しました。', [__METHOD__, 'LINE:' . __LINE__ . $e]);
+                exit;
             }
         }
     }
@@ -63,6 +64,7 @@ class Weather extends Model
      * 日付からレコードを検索して取得します
      * @param  string $date
      * @return Collection
+     * @throws Exception
      */
     public function fetch_by_date(string $date): Collection
     {

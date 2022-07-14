@@ -126,7 +126,7 @@ class WeatherController extends Controller
     public function check_response_error(array $response_data)
     {
         if (!empty($response_data['error_code']) || !empty($response_data['error_message'])) {
-            Log::error('取得データにエラーがあるため処理を中断しました', $response_data);
+            Log::error('取得データにエラーがあるため処理を中断しました。', $response_data);
             return $response_data;
         }
         return;
@@ -142,10 +142,10 @@ class WeatherController extends Controller
     {
         if ($response_json->clientError()) {
             // 400レベルのステータスコード
-            Log::error('[ジオコーディングAPIのエラー]クライアント側でエラーが発生しました', [__METHOD__, 'LINE:' . __LINE__, json_decode($response_json->body(), true)]);
+            Log::error('[ジオコーディングAPIのエラー]クライアント側でエラーが発生しました。', [__METHOD__, 'LINE:' . __LINE__, json_decode($response_json->body(), true)]);
         } elseif ($response_json->serverError()) {
             // 500レベルのステータスコード
-            Log::error('[ジオコーディングAPIのエラー]サーバー側でエラーが発生しました', [__METHOD__, 'LINE:' . __LINE__, json_decode($response_json->body(), true)]);
+            Log::error('[ジオコーディングAPIのエラー]サーバー側でエラーが発生しました。', [__METHOD__, 'LINE:' . __LINE__, json_decode($response_json->body(), true)]);
         }
     }
 

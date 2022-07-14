@@ -6,34 +6,47 @@ use App\Models\Weather;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use \Illuminate\Http\Client\Response;
+use Exception;
 
 /**
  * 天気予報APIへのリクエスト、レスポンスを処理するコントローラー
  */
-class WeatherController extends NoticeController
+class WeatherController extends Controller
 {
     // 定数の定義
     const GEOCODING_API = 'http://api.openweathermap.org/geo/1.0/direct';
     const WEATHER_API   = 'http://api.openweathermap.org/data/2.5/forecast';
+    const LINE_NOTIFY_URL = 'https://notify-api.line.me/api/notify';
 
     /**
-     * APIから天気予報を取得し、DB登録します
+     * APIから天気予報を取得し、通知します
      *
      * @return void
      */
-    public function store(): void
+    public function notice(): void
     {
         // 天気予報をAPIから取得
         $response = $this->fetch_weather_forecast();
         // レスポンスのエラー有無をチェックする。エラーがあればレスポンス返却。
         $this->check_response_error($response);
 
-        $weather_data_array = $response['list'];
-        $city_data          = $response['city']['name'];
-
-        // DB登録処理
-        $weather = new Weather();
-        $weather->insert_into_weather($weather_data_array, $city_data);
+        // DB登録、通知処理
+        try {
+            $weather = new Weather();
+            // weatherテーブルへのデータ格納
+            $weather->insert_into_weather($response['list'], $response['city']['name']);
+            // 通知用のレコード取得
+            $weather_data = $weather->fetch_by_date(date('Y-m-d'));
+            // LINE通知実行
+            Http::withToken(env('LINE_NOTIFY_API_TOKEN'))->asForm()->post(
+                self::LINE_NOTIFY_URL,
+                [
+                    'message' => 'テストだよ' // TODO: ここを実際に送信する天気情報のテキストにする。画像も送れる？
+                ]
+            );
+        } catch (Exception $e) {
+            Log::error('予期せぬエラーが発生しました。', [__METHOD__, 'LINE:' . __LINE__ . $e]);
+        }
     }
 
     /**

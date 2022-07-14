@@ -19,8 +19,5 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// 天気予報取得APIの呼出・DB登録
-Route::get('/store', [WeatherController::class, 'store']);
-
-// LINE NOTIFYによるユーザー通知実行
-Route::get('/notice', [NoticeController::class, 'notice']);
+// 天気予報取得APIの呼び出しと通知実行
+Route::get('/notice', [WeatherController::class, 'notice']);

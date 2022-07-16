@@ -41,12 +41,12 @@ class WeatherController extends Controller
             // LINE通知用のテキストを生成
             $text_for_line = $this->make_text_for_line($weather_data);
             // 整理したデータをもとにLINE通知実行
-            // Http::withToken(env('LINE_NOTIFY_API_TOKEN'))->asForm()->post(
-            //     self::LINE_NOTIFY_URL,
-            //     [
-            //         'message' => 'テストだよ' // TODO: ここを実際に送信する天気情報のテキストにする。画像も送れる？
-            //     ]
-            // );
+            Http::withToken(env('LINE_NOTIFY_API_TOKEN'))->asForm()->post(
+                self::LINE_NOTIFY_URL,
+                [
+                    'message' => $text_for_line
+                ]
+            );
         } catch (Exception $e) {
             Log::error('予期せぬエラーが発生しました。', [__METHOD__, 'LINE:' . __LINE__ . $e]);
         }
@@ -187,6 +187,6 @@ class WeatherController extends Controller
             $content .= PHP_EOL;
         }
 
-        return $header_text . $content . "以上です。";
+        return PHP_EOL . $header_text . $content . "以上です。";
     }
 }

@@ -62,6 +62,8 @@ class Weather extends Model
 
     /**
      * 日付からレコードを検索して取得します
+     * ※深夜3時のレコードを除いて取得しています
+     *
      * @param  string $date
      * @return Collection
      * @throws Exception
@@ -70,6 +72,8 @@ class Weather extends Model
     {
         return DB::table($this->table)
                     ->where('date', 'like', "{$date}%")
+                    ->offset(1)
+                    ->limit(6)
                     ->get();
     }
 }

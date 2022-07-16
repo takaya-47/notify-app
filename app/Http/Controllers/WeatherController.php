@@ -57,7 +57,7 @@ class WeatherController extends Controller
      *
      * @return array
      */
-    public function fetch_weather_forecast(): array
+    private function fetch_weather_forecast(): array
     {
         $geographic_data = $this->fetch_lat_and_lon();
         // レスポンスのエラー有無をチェックする。エラーがあればレスポンス返却。
@@ -93,7 +93,7 @@ class WeatherController extends Controller
      *
      * @return array
      */
-    public function fetch_lat_and_lon(): array
+    private function fetch_lat_and_lon(): array
     {
         // ジオコーディングAPIにリクエストし、レスポンスを受け取る
         $response_json = Http::get(
@@ -126,7 +126,7 @@ class WeatherController extends Controller
      * @param  mixed $response_data
      * @return mixed
      */
-    public function check_response_error(array $response_data)
+    private function check_response_error(array $response_data)
     {
         if (!empty($response_data['error_code']) || !empty($response_data['error_message'])) {
             Log::error('取得データにエラーがあるため処理を中断しました。', $response_data);
@@ -141,7 +141,7 @@ class WeatherController extends Controller
      * @param  Response $response_json
      * @return void
      */
-    public function make_error_log(Response $response_json): void
+    private function make_error_log(Response $response_json): void
     {
         if ($response_json->clientError()) {
             // 400レベルのステータスコード
@@ -158,7 +158,7 @@ class WeatherController extends Controller
      * @param  array $response_data
      * @return array
      */
-    public function response_when_api_error(array $response_data): array
+    private function response_when_api_error(array $response_data): array
     {
         return [
             'error_code'    => $response_data['cod'],

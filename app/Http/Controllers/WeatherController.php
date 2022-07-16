@@ -6,6 +6,7 @@ use App\Models\Weather;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use \Illuminate\Http\Client\Response;
+use Illuminate\Support\Collection;
 use Exception;
 
 /**
@@ -37,13 +38,15 @@ class WeatherController extends Controller
             $weather->insert_into_weather($response['list'], $response['city']['name']);
             // 通知用のレコード取得
             $weather_data = $weather->fetch_by_date(date('Y-m-d'));
-            // LINE通知実行
-            Http::withToken(env('LINE_NOTIFY_API_TOKEN'))->asForm()->post(
-                self::LINE_NOTIFY_URL,
-                [
-                    'message' => 'テストだよ' // TODO: ここを実際に送信する天気情報のテキストにする。画像も送れる？
-                ]
-            );
+            // LINE通知用のテキストを生成
+            $text_for_line = $this->make_text_for_line($weather_data);
+            // 整理したデータをもとにLINE通知実行
+            // Http::withToken(env('LINE_NOTIFY_API_TOKEN'))->asForm()->post(
+            //     self::LINE_NOTIFY_URL,
+            //     [
+            //         'message' => 'テストだよ' // TODO: ここを実際に送信する天気情報のテキストにする。画像も送れる？
+            //     ]
+            // );
         } catch (Exception $e) {
             Log::error('予期せぬエラーが発生しました。', [__METHOD__, 'LINE:' . __LINE__ . $e]);
         }
@@ -163,4 +166,27 @@ class WeatherController extends Controller
         ];
     }
 
+    /**
+     * LINEに通知するテキストデータを生成し、返却します
+     *
+     * @param  Collection $weather_data
+     * @return string
+     */
+    private function make_text_for_line(Collection $weather_data): string
+    {
+        $header_text = "{$weather_data[0]->municipalities}" . "の３時間毎の天気です。" . PHP_EOL;
+        $content = "";
+        foreach ($weather_data as $data) {
+            $time = date('G', strtotime($data->date));
+            $content .= "【{$time}" . "時】" . PHP_EOL;
+            $content .= "天候：" . "{$data->weather}" . PHP_EOL;
+            $content .= "最高気温：" . "{$data->highest_temperature}" . "度" . PHP_EOL;
+            $content .= "最低気温：" . "{$data->lowest_temperature}" . "度" . PHP_EOL;
+            $content .= "湿度：" . "{$data->humidity}" . "%" . PHP_EOL;
+            $content .= "降水確率：" . "{$data->rainy_percent}" . "%" . PHP_EOL;
+            $content .= PHP_EOL;
+        }
+
+        return $header_text . $content . "以上です。";
+    }
 }

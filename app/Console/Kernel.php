@@ -16,8 +16,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // 毎日朝5時半にタスクを実行する
-        $schedule->command(NoticeLine::class)->dailyAt('5:30');
+        $schedule->command(NoticeLine::class);
     }
 
     /**

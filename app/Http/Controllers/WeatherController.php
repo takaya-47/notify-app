@@ -41,12 +41,11 @@ class WeatherController extends Controller
             // LINE通知用のテキストを生成
             $text_for_line = $this->make_text_for_line($weather_data);
             // 整理したデータをもとにLINE通知実行
-            Http::withToken(env('LINE_NOTIFY_API_TOKEN'))->asForm()->post(
-                self::LINE_NOTIFY_URL,
-                [
-                    'message' => $text_for_line
-                ]
-            );
+            Http::withToken(env('LINE_NOTIFY_API_TOKEN'))
+                ->asForm()
+                ->post(self::LINE_NOTIFY_URL, ['message' => $text_for_line]);
+            // sendgridでメール通知実行
+            
         } catch (Exception $e) {
             Log::error('予期せぬエラーが発生しました。', [__METHOD__, 'LINE:' . __LINE__ . $e]);
         }

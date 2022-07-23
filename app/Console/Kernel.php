@@ -16,6 +16,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        // LINEへ天気予報を送るのは毎日5時55分
         $schedule->command(NoticeLine::class)->dailyAt('5:55');
     }
 

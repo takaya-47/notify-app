@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use \Illuminate\Http\Client\Response;
 use Illuminate\Support\Collection;
+use App\Mail\WeatherMail;
+use Illuminate\Support\Facades\Mail;
 use Exception;
 
 /**
@@ -45,7 +47,7 @@ class WeatherController extends Controller
                 ->asForm()
                 ->post(self::LINE_NOTIFY_URL, ['message' => $text_for_line]);
             // sendgridでメール通知実行
-            
+            Mail::to(env('MAIL_TARGET_ADDRESS'))->send(new WeatherMail($weather_data));
         } catch (Exception $e) {
             Log::error('予期せぬエラーが発生しました。', [__METHOD__, 'LINE:' . __LINE__ . $e]);
         }
@@ -179,8 +181,8 @@ class WeatherController extends Controller
             $time = date('G', strtotime($data->date));
             $content .= "【{$time}" . "時】" . PHP_EOL;
             $content .= "天候：" . "{$data->weather}" . PHP_EOL;
-            $content .= "最高気温：" . "{$data->highest_temperature}" . "度" . PHP_EOL;
-            $content .= "最低気温：" . "{$data->lowest_temperature}" . "度" . PHP_EOL;
+            $content .= "最高気温：" . "{$data->highest_temperature}" . "℃" . PHP_EOL;
+            $content .= "最低気温：" . "{$data->lowest_temperature}" . "℃" . PHP_EOL;
             $content .= "湿度：" . "{$data->humidity}" . "%" . PHP_EOL;
             $content .= "降水確率：" . "{$data->rainy_percent}" . "%" . PHP_EOL;
             $content .= PHP_EOL;
